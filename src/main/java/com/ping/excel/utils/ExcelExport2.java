@@ -53,7 +53,7 @@ public final class ExcelExport2 {
         //设置单元格内容
         cell.setCellValue(  "测试头部"  );
         //合并单元格CellRangeAddress构造参数依次表示起始行，截至行，起始列， 截至列
-        sheet.addMergedRegion(  new CellRangeAddress(  0  ,  0  ,  0  ,  3  ));
+        sheet.addMergedRegion(  new CellRangeAddress(  0  ,  0  ,  0  ,  attributeNames.length-1  ));
 
         row = sheet.createRow(1);
         for (int j = 0; j< tableAttributeName.length; j++){
@@ -64,9 +64,9 @@ public final class ExcelExport2 {
             cell.setCellValue(transCellType(tableAttributeName[j]));
         }
         //创建普通行
-        for (int i = 1;i<datalist.size();i++){
+        for (int i = 0;i<datalist.size();i++){
             //因为第一行已经用于创建标题行，故从第二行开始创建
-            row = sheet.createRow(i+1);
+            row = sheet.createRow(i+2);
             //如果是第一行就让其为标题行
             Object targetObj = datalist.get(i);
             for (int j = 0;j<fields.length;j++){

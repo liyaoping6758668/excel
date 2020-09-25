@@ -1,11 +1,8 @@
 package com.ping.excel.utils;
 
 import org.apache.poi.hssf.usermodel.*;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
-
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -31,47 +28,24 @@ public final class ExcelExport2 {
     public static void export(HttpServletResponse response, List<?> importlist, String[] attributeNames,String sheetTitle) {
         //获取数据集
         List<?> datalist = importlist;
+        HSSFWorkbook workbook = getCommon(sheetTitle, attributeNames);
+        HSSFSheet sheet = workbook.getSheet(sheetTitle);
+        HSSFCellStyle cellStyle = getCellStyle(workbook);
 
-        //声明一个工作薄
-        HSSFWorkbook workbook = new HSSFWorkbook();
-        //生成一个表格
-        HSSFSheet sheet = workbook.createSheet(sheetTitle);
-        //设置表格默认列宽度为15个字节
-        sheet.setDefaultColumnWidth((short) 18);
-
-
-        //获取字段名数组
-        String[] tableAttributeName = attributeNames;
         //获取对象属性
         Field[] fields = ClassUtil.getClassAttribute(importlist.get(0));
         //获取对象get方法
         List<Method> methodList = ClassUtil.getMethodGet(importlist.get(0));
 
-        //循环字段名数组，创建标题行
-        Row row = sheet.createRow(0);
-        Cell cell=row.createCell(  0  );
-        //设置单元格内容
-        cell.setCellValue(  "测试头部"  );
-        //合并单元格CellRangeAddress构造参数依次表示起始行，截至行，起始列， 截至列
-        sheet.addMergedRegion(  new CellRangeAddress(  0  ,  0  ,  0  ,  attributeNames.length-1  ));
-
-        row = sheet.createRow(1);
-        for (int j = 0; j< tableAttributeName.length; j++){
-            //创建列
-            cell = row.createCell(j);
-            //设置单元类型为String
-            cell.setCellType(CellType.STRING);
-            cell.setCellValue(transCellType(tableAttributeName[j]));
-        }
         //创建普通行
         for (int i = 0;i<datalist.size();i++){
             //因为第一行已经用于创建标题行，故从第二行开始创建
-            row = sheet.createRow(i+2);
+            Row row = sheet.createRow(i+2);
             //如果是第一行就让其为标题行
             Object targetObj = datalist.get(i);
             for (int j = 0;j<fields.length;j++){
                 //创建列
-                cell = row.createCell(j);
+                Cell cell = row.createCell(j);
                 cell.setCellType(CellType.STRING);
                 //
                 try {
@@ -82,6 +56,7 @@ public final class ExcelExport2 {
                 } catch (InvocationTargetException e) {
                     e.printStackTrace();
                 }
+                cell.setCellStyle(cellStyle);
             }
         }
         response.setContentType("application/octet-stream");
@@ -113,5 +88,81 @@ public final class ExcelExport2 {
         return str;
     }
 
+
+    /**
+     * 功能模板（标题及表头）
+     */
+    private static HSSFWorkbook getCommon(String sheetTitle, String[] fields) {
+        HSSFWorkbook workbook = new HSSFWorkbook();
+        HSSFSheet sheet = workbook.createSheet(sheetTitle);
+
+        // 设置列宽度
+        for (int i = 0; i < fields.length; i++) {
+            sheet.setColumnWidth(i, 16 * 256);
+        }
+
+        // 通用样式
+        HSSFCellStyle cellStyle = getCellStyle(workbook);
+
+        // 标题样式
+        HSSFCellStyle titleStyle = workbook.createCellStyle();
+        titleStyle.cloneStyleFrom(cellStyle);
+        titleStyle.setAlignment(HorizontalAlignment.CENTER);
+        titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        HSSFFont titleFont = workbook.createFont();
+        titleFont.setFontName("楷体");
+        titleFont.setBold(true);
+        titleFont.setFontHeight((short) 14);
+        titleFont.setFontHeightInPoints((short)24);//设置字体大小
+
+        titleStyle.setFont(titleFont);
+        // 表头样式
+        HSSFCellStyle thStyle = workbook.createCellStyle();
+        thStyle.cloneStyleFrom(titleStyle);
+        thStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        thStyle .setFillForegroundColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        HSSFFont thFont = workbook.createFont();
+        thFont.setFontName("楷体");
+        thFont.setBold(titleFont.getBold());
+        thFont.setColor(IndexedColors.WHITE.getIndex());
+        thStyle.setFont(thFont);
+
+        // 创建标题样式、表格表头
+        HSSFRow titleRow = sheet.createRow(0);
+        HSSFRow thsRow = sheet.createRow(1);
+        for (int i = 0; i < fields.length; i++) {
+            HSSFCell title = titleRow.createCell(i);
+            title.setCellStyle(titleStyle);
+            HSSFCell th = thsRow.createCell(i);
+            th.setCellValue(fields[i]);
+            th.setCellStyle(thStyle);
+        }
+
+        // 绘制标题
+        titleRow.setHeight((short) (26 * 20));
+        HSSFCell titleCell = titleRow.createCell(0);
+        titleCell.setCellValue(sheetTitle);
+        titleCell.setCellStyle(titleStyle);
+
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, fields.length - 1));
+        return workbook;
+
+    }
+
+    /**
+     * 获取通用样式
+     */
+    private static HSSFCellStyle getCellStyle(HSSFWorkbook workbook) {
+        HSSFCellStyle cellStyle = workbook.createCellStyle();
+        cellStyle.setBorderTop(BorderStyle.THIN);
+        cellStyle.setBorderLeft(BorderStyle.THIN);
+        cellStyle.setBorderRight(BorderStyle.THIN);
+        cellStyle.setBorderBottom(BorderStyle.THIN);
+        cellStyle.setAlignment(HorizontalAlignment.LEFT);
+        HSSFFont font = workbook.createFont();
+        font.setFontName("楷体");
+        cellStyle.setFont(font);
+        return cellStyle;
+    }
 }
 

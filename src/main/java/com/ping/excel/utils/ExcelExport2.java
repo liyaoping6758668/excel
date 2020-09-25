@@ -4,6 +4,7 @@ import org.apache.poi.hssf.usermodel.*;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.util.CellRangeAddress;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -27,16 +28,17 @@ public final class ExcelExport2 {
      * @param importlist 要导出的对象的集合
      * @param attributeNames 含有每个对象属性在excel表中对应的标题字符串的数组（请按对象中属性排序调整字符串在数组中的位置）
      */
-    public static void export(HttpServletResponse response, List<?> importlist, String[] attributeNames) {
+    public static void export(HttpServletResponse response, List<?> importlist, String[] attributeNames,String sheetTitle) {
         //获取数据集
         List<?> datalist = importlist;
 
         //声明一个工作薄
         HSSFWorkbook workbook = new HSSFWorkbook();
         //生成一个表格
-        HSSFSheet sheet = workbook.createSheet();
+        HSSFSheet sheet = workbook.createSheet(sheetTitle);
         //设置表格默认列宽度为15个字节
         sheet.setDefaultColumnWidth((short) 18);
+
 
         //获取字段名数组
         String[] tableAttributeName = attributeNames;
@@ -47,22 +49,29 @@ public final class ExcelExport2 {
 
         //循环字段名数组，创建标题行
         Row row = sheet.createRow(0);
+        Cell cell=row.createCell(  0  );
+        //设置单元格内容
+        cell.setCellValue(  "测试头部"  );
+        //合并单元格CellRangeAddress构造参数依次表示起始行，截至行，起始列， 截至列
+        sheet.addMergedRegion(  new CellRangeAddress(  0  ,  0  ,  0  ,  3  ));
+
+        row = sheet.createRow(1);
         for (int j = 0; j< tableAttributeName.length; j++){
             //创建列
-            Cell cell = row.createCell(j);
+            cell = row.createCell(j);
             //设置单元类型为String
             cell.setCellType(CellType.STRING);
             cell.setCellValue(transCellType(tableAttributeName[j]));
         }
         //创建普通行
-        for (int i = 0;i<datalist.size();i++){
+        for (int i = 1;i<datalist.size();i++){
             //因为第一行已经用于创建标题行，故从第二行开始创建
             row = sheet.createRow(i+1);
             //如果是第一行就让其为标题行
             Object targetObj = datalist.get(i);
             for (int j = 0;j<fields.length;j++){
                 //创建列
-                Cell cell = row.createCell(j);
+                cell = row.createCell(j);
                 cell.setCellType(CellType.STRING);
                 //
                 try {
